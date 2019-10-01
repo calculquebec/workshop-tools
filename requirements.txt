@@ -1,0 +1,5 @@
+cairosvg
+click
+jinja2
+pandas
+requests
