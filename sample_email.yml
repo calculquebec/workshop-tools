@@ -1,0 +1,10 @@
+--- # Email components
+replyto: 'no-reply@domain.name'
+subject: 'Training Certificate'
+message: |-
+  Hello {first_name} {last_name},
+
+  Attached is your certificate of participation for the workshop "{workshop}" given {date}.
+
+  Best regards,
+  Your instructor

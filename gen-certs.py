@@ -23,6 +23,7 @@
 # - Maxime Boissonneault
 # - Pier-Luc St-Onge
 
+
 import getpass
 import locale
 import os
@@ -34,26 +35,23 @@ import cairosvg
 import click
 import jinja2
 import requests
+import yaml
 
 from datetime import datetime
 from email import encoders
+from email.header import Header
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.header import Header
 
-
-EMAIL_SUBJECT = 'Attestation formation Calcul Québec'
-EMAIL_BODY = """Bonjour {first_name} {last_name},
-
-Ci-joint votre certification pour la formation {workshop} {date}.
-
-Cordialement,
-Calcul Québec
-"""
 api_url = "https://www.eventbriteapi.com/v3/"
 
+###############################################################################
+
 def get_event(event_id, api_key):
+    """
+    Returns - Python dictionary with Eventbrite event's attributes
+    """
     response = requests.get(
         "{}/events/{}/".format(api_url, event_id),
         headers = {
@@ -63,25 +61,21 @@ def get_event(event_id, api_key):
     )
     return response.json()
 
-def get_venue(venue_id, api_key):
-    response = requests.get(
-        "{}/venues/{}/".format(api_url, venue_id),
-        headers = {
-            "Authorization": "Bearer {}".format(api_key),
-        },
-        verify = True,
-    )
-    return response.json()
+###############################################################################
 
 def get_guests(event_id, api_key):
+    """
+    Returns - Python dictionary with Eventbrite attendees information
+    """
     response = requests.get(
         "{}/events/{}/attendees/".format(api_url, event_id),
-        headers = {
-            "Authorization": "Bearer {}".format(api_key),
-        },
+        headers = { "Authorization": "Bearer {}".format(api_key), },
         verify = True,
     )
+
     guests = response.json()['attendees']
+
+    # Check for any other pages of attendees
     while response.json()['pagination']['has_more_items']:
         continuation = response.json()['pagination']['continuation']
         response = requests.get(
@@ -90,18 +84,26 @@ def get_guests(event_id, api_key):
             verify = True,
         )
         guests.extend(response.json()['attendees'])
+
     return guests
 
-def build_checkedin_list(event, venue, guests, duration, date):
+###############################################################################
+
+def build_checkedin_list(event, guests, date, duration):
+    """
+    Returns - Python dictionary with formatted attendees information
+    """
     title = re.sub("(\[.*\])", "", event['name']['text']).strip()
-    where = venue['name']
+
     time_start = datetime.strptime(event['start']['local'], '%Y-%m-%dT%H:%M:%S')
-    time_end = datetime.strptime(event['end']['local'], '%Y-%m-%dT%H:%M:%S')
-    date = "du " + time_start.strftime('%d %B %Y') if not date else date
+    time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
     duration = (time_end - time_start).total_seconds() / 3600 if not duration else duration
-    attended_guests = []
+
     # set locale in french for month name
     locale.setlocale(locale.LC_ALL, 'fr_FR')
+
+    attended_guests = []
+
     for guest in guests:
         if guest['checked_in']:
             first_name = guest['profile']['first_name']
@@ -112,7 +114,6 @@ def build_checkedin_list(event, venue, guests, duration, date):
                        'first_name' : first_name.upper(), 
                        'last_name'  : last_name.upper(),
                        'email' : email,
-                       'where' : where,
                        'date' : date,
                        'duration' : duration,
                        'order_id' : order_id,
@@ -121,32 +122,39 @@ def build_checkedin_list(event, venue, guests, duration, date):
                                                                                         order_id)
             }
             attended_guests.append(context)
+
     return attended_guests
 
-def write_certificates(guests):
+###############################################################################
+
+def write_certificates(guests, svg_tplt):
+    """
+    Generates one PDF per attendee
+    """
     try:
         os.mkdir('./certificates')
     except OSError:
         pass
+
     # certificate jinja2 template
-    tpl = jinja2.Environment(loader=jinja2.FileSystemLoader('./')).get_template('template.svg')
+    tpl = jinja2.Environment(loader=jinja2.FileSystemLoader('../')).get_template(svg_tplt)
+
     for guest in guests:
         cairosvg.svg2pdf(bytestring=tpl.render(guest).encode('utf-8'), 
                          write_to=guest['filename'])
 
-def create_email(from_, guest, send_self):
+###############################################################################
+
+def create_email(gmail_user, guest, email_tplt, send_self):
     # Create email
     outer = MIMEMultipart()
-    outer['From'] = from_
-    if send_self:
-        outer['To'] = from_
-    else:
-        outer['To'] = guest['email']
-    outer['Reply-to'] = 'no-reply@calculquebec.ca'
-    outer['Subject'] = Header(EMAIL_SUBJECT, 'utf-8')
+    outer['From'] = gmail_user
+    outer['To'] = gmail_user if send_self else guest['email']
+    outer['Reply-to'] = email_tplt['replyto']
+    outer['Subject'] = Header(email_tplt['subject'])
 
     # Attach body
-    body = MIMEText(EMAIL_BODY.format(**guest), 'plain', 'utf-8')
+    body = MIMEText(email_tplt['message'].format(**guest), 'plain')
     outer.attach(body)
 
     # Attach PDF Certificate
@@ -156,9 +164,16 @@ def create_email(from_, guest, send_self):
     encoders.encode_base64(msg)
     msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(guest['filename']))
     outer.attach(msg)
+
     return outer
 
-def send_email(attended_guests, send_self):
+###############################################################################
+
+def send_email(attended_guests, yml_tplt, send_self):
+    email_tplt = {}
+    with open(yml_tplt, 'rt', encoding='utf8') as f:
+        email_tplt = yaml.load(f, Loader=yaml.FullLoader)
+
     gmail_user = input('gmail username: ')
     gmail_password = getpass.getpass('gmail password: ')
 
@@ -169,12 +184,14 @@ def send_email(attended_guests, send_self):
         server.login(gmail_user, gmail_password)
 
         for guest in attended_guests:
-            email = create_email(gmail_user, guest, send_self)
+            email = create_email(gmail_user, guest, email_tplt, send_self)
+
             # Send email
             if send_self:
                 print('sending email to YOU about: {first_name} ({email})...'.format(**guest))
             else:
                 print('sending email to: {first_name} {last_name} ({email})...'.format(**guest))
+
             try:
                 server.sendmail(email['From'], email['To'], email.as_string())
             except smtplib.SMTPAuthenticationError as e:
@@ -183,22 +200,27 @@ def send_email(attended_guests, send_self):
                 print('Go to https://myaccount.google.com/lesssecureapps and Allow less secure apps.')
                 sys.exit(1)
 
+###############################################################################
+
 @click.command()
-@click.option('--event_id', prompt='Event ID', help='Event ID')
-@click.option('--api_key', prompt='API Key', help='EventBrite API Key')
-@click.option('--duration', default=0, type=float, help='Override workshop duration in hours')
-@click.option('--email/--no-email', default=False, help="Send the certificate to each attendee")
-@click.option('--send_self/--no-send_self', default=False, help="Send to self")
-@click.option('--archive/--no-archive', default=False, help="Create a zip file with the certificates")
-@click.option('--date', default=None, type=str, help="Specifies the date manually")
-def main(event_id, api_key, duration, email, send_self, archive, date):
+@click.option('--event_id', help="(CQCG_EVENT_ID) Eventbrite Event ID",    type=str, prompt="Event ID")
+@click.option('--api_key',  help="(CQCG_API_KEY) Eventbrite API Key",      type=str, prompt="API Key")
+@click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str, prompt="Event date")
+@click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
+@click.option('--svg_tplt', help="(CQCG_SVG_TPLT) Certificate template", type=click.Path(), prompt="SVG file")
+@click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",       type=click.Path(), prompt="YAML file")
+@click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
+@click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
+def main(event_id, api_key, date, duration, svg_tplt, yml_tplt, send_atnd, send_self):
     event = get_event(event_id, api_key)
-    venue = get_venue(event['venue_id'], api_key)
     guests = get_guests(event_id, api_key)
-    attended_guests = build_checkedin_list(event, venue, guests, duration, date)
-    write_certificates(attended_guests)
-    if send_self or email:
-        send_email(attended_guests, send_self)
+
+    attended_guests = build_checkedin_list(event, guests, date, duration)
+    write_certificates(attended_guests, svg_tplt)
+
+    if send_atnd or send_self:
+        send_email(attended_guests, yml_tplt, send_self)
+
 
 if __name__ == "__main__":
-    main()
+    main(auto_envvar_prefix='CQCG')
