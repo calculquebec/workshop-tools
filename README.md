@@ -29,5 +29,13 @@ Make sure the Python virtual environment is loaded:
   `python gen-certs.py`
 * To generate PDFs and send emails to YOU:  
   `python gen-certs.py --send_self`
-* To generate PDFs and finally send emails to participants:  
-  `python gen-certs.py --email`
+* To generate PDFs and finally send emails to attendees:  
+  `python gen-certs.py --send_atnd`
+
+For convenience, environment variables can be set in advance (through some `source_file.sh`):
+* `export CQCG_API_KEY=...`
+* `export CQCG_EVENT_ID=...`
+* `export CQCG_DATE="on Month DD, YYYY"`
+* `export CQCG_DURATION=6.0`
+* `export CQCG_SVG_TPLT=training.svg`
+* `export CQCG_YML_TPLT=training.yml`
