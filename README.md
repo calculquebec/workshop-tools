@@ -8,13 +8,18 @@
 
 ## Preparation
 * On Eventbrite, make sure selected participants are "Checked In" in **Manage** > **Manage Attendees** > **Check-in**
-* The script expects a `template.svg` file with the following template fields:
+* The script requires a certificate template in SVG format with the following fields:
   - First name: `{{ first_name }}`
   - Last name: `{{ last_name }}`
-  - Main title: `{{ workshop }}`
-  - "le JJ mois AAAA": `{{ date }}`
+  - Event title: `{{ workshop }}`
+  - "on Month DD, YYYY": `{{ date }}`
   - Duration in hours: `{{ duration }}`
   - Order ID: `{{ order_id }}`
+* The script requires an email template in YAML format with the following fields (see `sample_email.yml`):
+  - First name: `{first_name}`
+  - Last name: `{last_name}`
+  - Event title: `{workshop}`
+  - "on Month DD, YYYY": `{date}`
 * For help and available options:  
   `python gen-certs.py --help`
 
