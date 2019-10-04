@@ -137,7 +137,9 @@ def write_certificates(guests, svg_tplt):
         pass
 
     # certificate jinja2 template
-    tpl = jinja2.Environment(loader=jinja2.FileSystemLoader('../')).get_template(svg_tplt)
+    tpl_dir = os.path.dirname(svg_tplt)
+    tpl_name = os.path.basename(svg_tplt)
+    tpl = jinja2.Environment(loader=jinja2.FileSystemLoader(tpl_dir)).get_template(tpl_name)
 
     for guest in guests:
         cairosvg.svg2pdf(bytestring=tpl.render(guest).encode('utf-8'), 
