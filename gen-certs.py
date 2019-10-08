@@ -111,7 +111,7 @@ def build_checkedin_list(event, guests, title, date, duration, select):
     attended_guests = []
 
     for guest in guests:
-        if sel_pattern.search(str(guest[col_name])):
+        if guest['checked_in'] and (sel_pattern.search(str(guest[col_name]))):
             first_name = guest['profile']['first_name']
             last_name = guest['profile']['last_name']
             email = guest['profile']['email']
