@@ -90,11 +90,11 @@ def get_guests(event_id, api_key):
 
 ###############################################################################
 
-def build_checkedin_list(event, guests, date, duration, select):
+def build_checkedin_list(event, guests, title, date, duration, select):
     """
     Returns - Python dictionary with formatted attendees information
     """
-    title = re.sub("(\[.*\])", "", event['name']['text']).strip()
+    title = re.sub("(\[.*\])", "", event['name']['text']).strip() if not title else title
 
     time_start = datetime.strptime(event['start']['local'], '%Y-%m-%dT%H:%M:%S')
     time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
@@ -213,6 +213,7 @@ def send_email(attended_guests, yml_tplt, send_self):
 @click.command()
 @click.option('--event_id', help="(CQCG_EVENT_ID) Eventbrite Event ID",    type=str, prompt="Event ID")
 @click.option('--api_key',  help="(CQCG_API_KEY) Eventbrite API Key",      type=str, prompt="API Key")
+@click.option('--title',    help="(CQCG_TITLE) Override workshop title",   type=str, default=None)
 @click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str, prompt="Event date")
 @click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--select',   help="Column_name~Regex (select where ...)",   type=str, default="checked_in~True")
@@ -221,7 +222,7 @@ def send_email(attended_guests, yml_tplt, send_self):
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
 @click_config_file.configuration_option(default="config")
-def main(event_id, api_key, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
+def main(event_id, api_key, title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
     print("--- Configuration ---")
     print(f"Event ID:   {event_id}")
     print(f"API KEY:    {api_key}")
@@ -234,7 +235,7 @@ def main(event_id, api_key, date, duration, select, svg_tplt, yml_tplt, send_atn
     event = get_event(event_id, api_key)
     guests = get_guests(event_id, api_key)
 
-    attended_guests = build_checkedin_list(event, guests, date, duration, select)
+    attended_guests = build_checkedin_list(event, guests, title, date, duration, select)
     write_certificates(attended_guests, svg_tplt)
 
     if send_atnd or send_self:
