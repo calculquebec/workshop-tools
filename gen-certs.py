@@ -90,7 +90,7 @@ def get_guests(event_id, api_key):
 
 ###############################################################################
 
-def build_checkedin_list(event, guests, date, duration):
+def build_checkedin_list(event, guests, date, duration, select):
     """
     Returns - Python dictionary with formatted attendees information
     """
@@ -100,13 +100,18 @@ def build_checkedin_list(event, guests, date, duration):
     time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
     duration = (time_end - time_start).total_seconds() / 3600 if not duration else duration
 
+    # Separate column name and regex selection pattern
+    col_regex = select.split('~', 1)
+    col_name = col_regex[0]
+    sel_pattern  = re.compile(col_regex[1])
+
     # set locale in french for month name
     locale.setlocale(locale.LC_ALL, 'fr_FR')
 
     attended_guests = []
 
     for guest in guests:
-        if guest['checked_in']:
+        if sel_pattern.search(str(guest[col_name])):
             first_name = guest['profile']['first_name']
             last_name = guest['profile']['last_name']
             email = guest['profile']['email']
@@ -210,24 +215,26 @@ def send_email(attended_guests, yml_tplt, send_self):
 @click.option('--api_key',  help="(CQCG_API_KEY) Eventbrite API Key",      type=str, prompt="API Key")
 @click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str, prompt="Event date")
 @click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
+@click.option('--select',   help="Column_name~Regex (select where ...)",   type=str, default="checked_in~True")
 @click.option('--svg_tplt', help="(CQCG_SVG_TPLT) Certificate template", type=click.Path(), prompt="SVG file")
 @click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",       type=click.Path(), prompt="YAML file")
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
 @click_config_file.configuration_option(default="config")
-def main(event_id, api_key, date, duration, svg_tplt, yml_tplt, send_atnd, send_self):
+def main(event_id, api_key, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
     print("--- Configuration ---")
     print(f"Event ID:   {event_id}")
     print(f"API KEY:    {api_key}")
     print(f"Event date: {date}")
     print(f"Duration:   {duration}")
+    print(f"Select if:  {select}")
     print(f"SVG file:   {svg_tplt}")
     print(f"YAML file:  {yml_tplt}")
 
     event = get_event(event_id, api_key)
     guests = get_guests(event_id, api_key)
 
-    attended_guests = build_checkedin_list(event, guests, date, duration)
+    attended_guests = build_checkedin_list(event, guests, date, duration, select)
     write_certificates(attended_guests, svg_tplt)
 
     if send_atnd or send_self:
