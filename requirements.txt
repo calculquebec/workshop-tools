@@ -1,5 +1,6 @@
 cairosvg
 click
+click-config-file
 jinja2
 pandas
 pyyaml

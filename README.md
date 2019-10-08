@@ -22,6 +22,13 @@
   - "on Month DD, YYYY": `{date}`
 * For help and available options:  
   `python gen-certs.py --help`
+* For convenience, options can be set in the `config` file or with environment variables:
+  - `export CQCG_API_KEY=...`
+  - `export CQCG_EVENT_ID=...`
+  - `export CQCG_DATE="on Month DD, YYYY"`
+  - `export CQCG_DURATION=6.0`
+  - `export CQCG_SVG_TPLT=training.svg`
+  - `export CQCG_YML_TPLT=training.yml`
 
 ## Execution examples
 Make sure the Python virtual environment is loaded:
@@ -31,11 +38,3 @@ Make sure the Python virtual environment is loaded:
   `python gen-certs.py --send_self`
 * To generate PDFs and finally send emails to attendees:  
   `python gen-certs.py --send_atnd`
-
-For convenience, environment variables can be set in advance (through some `source_file.sh`):
-* `export CQCG_API_KEY=...`
-* `export CQCG_EVENT_ID=...`
-* `export CQCG_DATE="on Month DD, YYYY"`
-* `export CQCG_DURATION=6.0`
-* `export CQCG_SVG_TPLT=training.svg`
-* `export CQCG_YML_TPLT=training.yml`

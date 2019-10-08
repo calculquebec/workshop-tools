@@ -33,6 +33,7 @@ import sys
 
 import cairosvg
 import click
+import click_config_file
 import jinja2
 import requests
 import yaml
@@ -213,7 +214,16 @@ def send_email(attended_guests, yml_tplt, send_self):
 @click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",       type=click.Path(), prompt="YAML file")
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
+@click_config_file.configuration_option(default="config")
 def main(event_id, api_key, date, duration, svg_tplt, yml_tplt, send_atnd, send_self):
+    print("--- Configuration ---")
+    print(f"Event ID:   {event_id}")
+    print(f"API KEY:    {api_key}")
+    print(f"Event date: {date}")
+    print(f"Duration:   {duration}")
+    print(f"SVG file:   {svg_tplt}")
+    print(f"YAML file:  {yml_tplt}")
+
     event = get_event(event_id, api_key)
     guests = get_guests(event_id, api_key)
 

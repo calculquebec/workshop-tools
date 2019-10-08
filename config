@@ -1,0 +1,6 @@
+event_id = None  # "1234567890"
+api_key = None   # "APIKEY1234567890"
+date = None      # "on January 1st, 1970"
+duration = None  # 3.0
+svg_tplt = None  # "sample_cert.svg"
+yml_tplt = None  # "sample_email.yml"
