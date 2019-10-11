@@ -23,8 +23,8 @@
 * For help and available options:  
   `python gen-certs.py --help`
 * For convenience, options can be set in the `config` file or with environment variables:
-  - `export CQCG_API_KEY=...`
-  - `export CQCG_EVENT_ID=...`
+  - `export CQCG_FROMEB_API_KEY=...`
+  - `export CQCG_FROMEB_EVENT_ID=...`
   - `export CQCG_DATE="on Month DD, YYYY"`
   - `export CQCG_DURATION=6.0`
   - `export CQCG_SVG_TPLT=training.svg`
@@ -33,8 +33,8 @@
 ## Execution examples
 Make sure the Python virtual environment is loaded:
 * To only generate PDFs:  
-  `python gen-certs.py`
+  `python gen-certs.py fromeb`
 * To generate PDFs and send emails to YOU:  
-  `python gen-certs.py --send_self`
+  `python gen-certs.py --send_self fromeb`
 * To generate PDFs and finally send emails to attendees:  
-  `python gen-certs.py --send_atnd`
+  `python gen-certs.py --send_atnd fromeb`

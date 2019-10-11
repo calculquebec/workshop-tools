@@ -210,30 +210,91 @@ def send_email(attended_guests, yml_tplt, send_self):
 
 ###############################################################################
 
-@click.command()
-@click.option('--event_id', help="(CQCG_EVENT_ID) Eventbrite Event ID",    type=str, prompt="Event ID")
-@click.option('--api_key',  help="(CQCG_API_KEY) Eventbrite API Key",      type=str, prompt="API Key")
+class MainParams:
+    def getAll(self):
+        return (self.title,
+                self.date,
+                self.duration,
+                self.select,
+                self.svg_tplt,
+                self.yml_tplt,
+                self.send_atnd,
+                self.send_self)
+
+    def setAll(self, title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
+        self.title     = title
+        self.date      = date
+        self.duration  = duration
+        self.select    = select
+        self.svg_tplt  = svg_tplt
+        self.yml_tplt  = yml_tplt
+        self.send_atnd = send_atnd
+        self.send_self = send_self
+
+    def printParams(self):
+        click.echo("--- Main Configuration ---")
+        if self.title: click.echo(f"New title:  {self.title}")
+        click.echo(f"Event date: {self.date}")
+        click.echo(f"Duration:   {self.duration}")
+        click.echo(f"Select if:  {self.select}")
+        click.echo(f"SVG file:   {self.svg_tplt}")
+        click.echo(f"YAML file:  {self.yml_tplt}")
+
+###############################################################################
+
+@click.group(invoke_without_command=False)
 @click.option('--title',    help="(CQCG_TITLE) Override workshop title",   type=str, default=None)
-@click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str, prompt="Event date")
+@click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str)
 @click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--select',   help="Column_name~Regex (select where ...)",   type=str, default="checked_in~True")
-@click.option('--svg_tplt', help="(CQCG_SVG_TPLT) Certificate template", type=click.Path(), prompt="SVG file")
-@click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",       type=click.Path(), prompt="YAML file")
+@click.option('--svg_tplt', help="(CQCG_SVG_TPLT) Certificate template",   type=click.Path())
+@click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
 @click_config_file.configuration_option(default="config")
-def main(event_id, api_key, title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
-    print("--- Configuration ---")
+@click.pass_context
+def main(ctx,      title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
+    ctx.obj.setAll(title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self)
+
+###############################################################################
+
+@main.command()
+@click.option('--event_id', help="(CQCG_FROMEB_EVENT_ID) Eventbrite Event ID", type=str)
+@click.option('--api_key',  help="(CQCG_FROMEB_API_KEY) Eventbrite API Key",   type=str)
+@click_config_file.configuration_option(default="config")
+@click.pass_context
+def fromeb(ctx, event_id, api_key):
+    """ # Get data from the Eventbrite API """
+    print("--- From Eventbrite ---")
     print(f"Event ID:   {event_id}")
     print(f"API KEY:    {api_key}")
-    print(f"Event date: {date}")
-    print(f"Duration:   {duration}")
-    print(f"Select if:  {select}")
-    print(f"SVG file:   {svg_tplt}")
-    print(f"YAML file:  {yml_tplt}")
+
+    assert event_id, "The event ID is undefined"
+    assert api_key,  "The API KEY is undefined"
 
     event = get_event(event_id, api_key)
     guests = get_guests(event_id, api_key)
+
+    common_main(event, guests, ctx.obj)
+
+###############################################################################
+
+@main.command()
+@click.option('--csv_file', help="(CQCG_FROMCSV_CSV_FILE) Eventbrite attendee summary in CSV", type=click.Path())
+@click_config_file.configuration_option(default="config")
+@click.pass_context
+def fromcsv(ctx, csv_file):
+    """ # Get data from a CSV file """
+    print("--- From CSV File ---")
+    print(f"CSV file:   {csv_file}")
+
+    assert csv_file, "The CSV file is undefined"
+
+###############################################################################
+
+def common_main(event, guests, params):
+    params.printParams();
+    title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self = params.getAll()
 
     attended_guests = build_checkedin_list(event, guests, title, date, duration, select)
     write_certificates(attended_guests, svg_tplt)
@@ -241,6 +302,7 @@ def main(event_id, api_key, title, date, duration, select, svg_tplt, yml_tplt, s
     if send_atnd or send_self:
         send_email(attended_guests, yml_tplt, send_self)
 
+###############################################################################
 
 if __name__ == "__main__":
-    main(auto_envvar_prefix='CQCG')
+    main(auto_envvar_prefix='CQCG', obj=MainParams())
