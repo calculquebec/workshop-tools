@@ -25,16 +25,26 @@
 * For convenience, options can be set in the `config` file or with environment variables:
   - `export CQCG_FROMEB_API_KEY=...`
   - `export CQCG_FROMEB_EVENT_ID=...`
+  - `export CQCG_FROMCSV_CSV_FILE=report.csv`
+  - `export CQCG_TITLE=...`
   - `export CQCG_DATE="on Month DD, YYYY"`
   - `export CQCG_DURATION=6.0`
   - `export CQCG_SVG_TPLT=training.svg`
   - `export CQCG_YML_TPLT=training.yml`
 
 ## Execution examples
-Make sure the Python virtual environment is loaded:
+`fromeb`: Make sure the Python virtual environment is loaded:
 * To only generate PDFs:  
   `python gen-certs.py fromeb`
 * To generate PDFs and send emails to YOU:  
   `python gen-certs.py --send_self fromeb`
 * To generate PDFs and finally send emails to attendees:  
   `python gen-certs.py --send_atnd fromeb`
+
+`fromcsv`: If using a CSV attendee report generated on Eventbrite website:
+* To only generate PDFs:  
+  `python gen-certs.py fromcsv`
+* To generate PDFs and send emails to YOU:  
+  `python gen-certs.py --send_self fromcsv`
+* To generate PDFs and finally send emails to attendees:  
+  `python gen-certs.py --send_atnd fromcsv`

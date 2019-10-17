@@ -35,6 +35,7 @@ import cairosvg
 import click
 import click_config_file
 import jinja2
+import pandas
 import requests
 import yaml
 
@@ -90,15 +91,36 @@ def get_guests(event_id, api_key):
 
 ###############################################################################
 
+def csv_guests(csv_file):
+    guests_df = pandas.read_csv(csv_file)
+    guests_df.rename(columns={"First Name": "first_name",
+                              "Last Name":  "last_name",
+                              "Email":      "email"    }, inplace=True)
+    status_col = 'Attendee Status'
+    guests = []
+
+    for index, row in guests_df.iterrows():
+        guest = {'checked_in': row[status_col] == 'Checked In',
+                 'order_id':   row['Order #'],
+                 'profile':    row['first_name':status_col].to_dict(),
+                 'answers':    row[status_col:].iloc[1:].to_dict()}
+        guests.append(guest)
+
+    return guests
+
+###############################################################################
+
 def build_checkedin_list(event, guests, title, date, duration, select):
     """
     Returns - Python dictionary with formatted attendees information
     """
-    title = re.sub("(\[.*\])", "", event['name']['text']).strip() if not title else title
+    if not title:
+        title = re.sub("(\[.*\])", "", event['name']['text']).strip()
 
-    time_start = datetime.strptime(event['start']['local'], '%Y-%m-%dT%H:%M:%S')
-    time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
-    duration = (time_end - time_start).total_seconds() / 3600 if not duration else duration
+    if not duration:
+        time_start = datetime.strptime(event['start']['local'], '%Y-%m-%dT%H:%M:%S')
+        time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
+        duration = (time_end - time_start).total_seconds() / 3600
 
     # Separate column name and regex selection pattern
     col_regex = select.split('~', 1)
@@ -289,6 +311,15 @@ def fromcsv(ctx, csv_file):
     print(f"CSV file:   {csv_file}")
 
     assert csv_file, "The CSV file is undefined"
+
+    assert ctx.obj.title,    "The title is undefined"
+    assert ctx.obj.date,     "The date is undefined"
+    assert ctx.obj.duration, "The duration is undefined"
+
+    event = {}
+    guests = csv_guests(csv_file)
+
+    common_main(event, guests, ctx.obj)
 
 ###############################################################################
 
