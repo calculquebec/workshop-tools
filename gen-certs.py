@@ -37,6 +37,7 @@ import click_config_file
 import jinja2
 import pandas
 import requests
+import unidecode
 import yaml
 
 from datetime import datetime
@@ -110,6 +111,47 @@ def csv_guests(csv_file):
 
 ###############################################################################
 
+def safe_name(name):
+    rules = {"&" : " and ",
+             "\\": "/"    }
+
+    for old, new in rules.items():
+        name = name.replace(old, new)
+
+    return name.upper()
+
+###############################################################################
+
+def safe_filename(filename):
+    rules = {"!" : ".",
+             "@" : "_at_",
+             "#" : "_no_",
+             "$" : "S",
+             "%" : "_per_",
+             "?" : ".",
+             "&" : "_and_",
+             "+" : "_and_",
+             "*" : "_",
+             "~" : "_in_",
+             ";" : ".",
+             ":" : ".",
+             "," : ".",
+             "/" : "-",
+             "|" : "-",
+             "\\": "-",
+             " " : "_",
+             "'" : "_",
+             '"' : "_"    }
+
+    filename = unidecode.unidecode(filename)
+
+    for old, new in rules.items():
+        filename = filename.replace(old, new)
+
+    return filename.upper()
+
+###############################################################################
+
 def build_checkedin_list(event, guests, title, date, duration, select):
     """
     Returns - Python dictionary with formatted attendees information
@@ -130,6 +172,7 @@ def build_checkedin_list(event, guests, title, date, duration, select):
     # set locale in french for month name
     locale.setlocale(locale.LC_ALL, 'fr_FR')
 
+    filename_template = './certificates/Attestation_CQ_{}_{}_{}.pdf'
     attended_guests = []
 
     for guest in guests:
@@ -139,15 +182,15 @@ def build_checkedin_list(event, guests, title, date, duration, select):
             email = guest['profile']['email']
             order_id = guest['order_id']
             context = {'workshop' : title, 
-                       'first_name' : first_name.upper(), 
-                       'last_name'  : last_name.upper(),
+                       'first_name' : safe_name(first_name),
+                       'last_name'  : safe_name(last_name),
                        'email' : email,
                        'date' : date,
                        'duration' : duration,
                        'order_id' : order_id,
-                       'filename' : './certificates/Attestation_CQ_{}_{}_{}.pdf'.format(first_name.replace(" ", "_").upper(), 
-                                                                                        last_name.replace(" ", "_").upper(),
-                                                                                        order_id)
+                       'filename' : filename_template.format(safe_filename(first_name),
+                                                             safe_filename(last_name),
+                                                             order_id)
             }
             attended_guests.append(context)
 
@@ -159,6 +202,7 @@ def write_certificates(guests, svg_tplt):
     """
     Generates one PDF per attendee
     """
+    print("--- Generating PDFs ---")
     try:
         os.mkdir('./certificates')
     except OSError:
@@ -170,6 +214,7 @@ def write_certificates(guests, svg_tplt):
     tpl = jinja2.Environment(loader=jinja2.FileSystemLoader(tpl_dir)).get_template(tpl_name)
 
     for guest in guests:
+        print(f"Generating: {guest['filename']}")
         cairosvg.svg2pdf(bytestring=tpl.render(guest).encode('utf-8'), 
                          write_to=guest['filename'])
 
