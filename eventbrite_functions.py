@@ -1,4 +1,5 @@
 import requests
+import unidecode
 from datetime import datetime
 import locale
 import re

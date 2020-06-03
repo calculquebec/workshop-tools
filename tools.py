@@ -37,7 +37,6 @@ import click_config_file
 import jinja2
 import pandas
 import requests
-import unidecode
 import yaml
 
 from datetime import datetime
