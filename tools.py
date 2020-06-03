@@ -47,6 +47,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from eventbrite_functions import *
 
+def update_usernames(guests, usernames=None):
+    users = users if usernames else ["user%02d" % (i+1) for i in range(len(guests))]
+    for guest,user in zip(guests,users):
+        guest['username'] = user
+    return guests
+
 def csv_guests(csv_file):
     guests_df = pandas.read_csv(csv_file)
     guests_df.rename(columns={"First Name": "first_name",
@@ -65,7 +71,7 @@ def csv_guests(csv_file):
     return guests
 
 
-def write_certificates(guests, svg_tplt):
+def write_certificates(guests, certificate_svg_tplt):
     """
     Generates one PDF per attendee
     """
@@ -76,8 +82,8 @@ def write_certificates(guests, svg_tplt):
         pass
 
     # certificate jinja2 template
-    tpl_dir = os.path.dirname(svg_tplt)
-    tpl_name = os.path.basename(svg_tplt)
+    tpl_dir = os.path.dirname(certificate_svg_tplt)
+    tpl_name = os.path.basename(certificate_svg_tplt)
     tpl = jinja2.Environment(loader=jinja2.FileSystemLoader(tpl_dir)).get_template(tpl_name)
 
     for guest in guests:
@@ -87,11 +93,17 @@ def write_certificates(guests, svg_tplt):
 
 ###############################################################################
 
-def create_email(gmail_user, guest, email_tplt, send_self):
+def create_email(gmail_user, guest, email_tplt, send_self, attach_certificate=True, self_email=None):
     # Create email
     outer = MIMEMultipart()
     outer['From'] = gmail_user
-    outer['To'] = gmail_user if send_self else guest['email']
+    if send_self:
+        if self_email:
+            outer['To'] = self_email
+        else:
+            outer['To'] = gmail_user
+    else:
+        outer['To'] = guest['email']
     outer['Reply-to'] = email_tplt['replyto']
     outer['Subject'] = Header(email_tplt['subject'])
 
@@ -100,24 +112,29 @@ def create_email(gmail_user, guest, email_tplt, send_self):
     outer.attach(body)
 
     # Attach PDF Certificate
-    msg = MIMEBase('application', "octet-stream")
-    with open(guest['filename'], 'rb') as file_:
-        msg.set_payload(file_.read())
-    encoders.encode_base64(msg)
-    msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(guest['filename']))
-    outer.attach(msg)
+    if attach_certificate:
+        msg = MIMEBase('application', "octet-stream")
+        with open(guest['filename'], 'rb') as file_:
+            msg.set_payload(file_.read())
+        encoders.encode_base64(msg)
+        msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(guest['filename']))
+        outer.attach(msg)
 
     return outer
 
 ###############################################################################
 
-def send_email(attended_guests, yml_tplt, send_self):
+def send_email(attended_guests, email_tplt_file, send_self, attach_certificate=True, gmail_user=None, gmail_password=None, self_email=None):
     email_tplt = {}
-    with open(yml_tplt, 'rt', encoding='utf8') as f:
+    with open(email_tplt_file, 'rt', encoding='utf8') as f:
         email_tplt = yaml.load(f, Loader=yaml.FullLoader)
 
-    gmail_user = input('gmail username: ')
-    gmail_password = getpass.getpass('gmail password: ')
+    if not gmail_user:
+        gmail_user = input('gmail username: ')
+    if not gmail_password:
+        gmail_password = getpass.getpass('gmail password: ')
+    if not self_email:
+        self_email = gmail_user
 
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.ehlo()
@@ -126,7 +143,7 @@ def send_email(attended_guests, yml_tplt, send_self):
         server.login(gmail_user, gmail_password)
 
         for guest in attended_guests:
-            email = create_email(gmail_user, guest, email_tplt, send_self)
+            email = create_email(gmail_user, guest, email_tplt, send_self, attach_certificate, self_email)
 
             # Send email
             if send_self:
@@ -150,100 +167,166 @@ class MainParams:
                 self.date,
                 self.duration,
                 self.select,
-                self.svg_tplt,
-                self.yml_tplt,
+                self.certificate_svg_tplt,
+                self.certificate_email_tplt,
                 self.send_atnd,
-                self.send_self)
+                self.send_self,
+                self.source,
+                self.event_id,
+                self.api_key,
+                self.csv_file,
+                self.gmail_user,
+                self.gmail_password,
+                self.self_email)
 
-    def setAll(self, title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
+    def setAll(self, title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
         self.title     = title
         self.date      = date
-        self.duration  = duration
         self.select    = select
-        self.svg_tplt  = svg_tplt
-        self.yml_tplt  = yml_tplt
         self.send_atnd = send_atnd
         self.send_self = send_self
+        self.source    = source
+        self.event_id  = event_id
+        self.api_key   = api_key
+        self.csv_file  = csv_file
+        self.gmail_user = gmail_user
+        self.gmail_password = gmail_password
+        self.self_email = self_email
+        self.duration   = None
+        self.certificate_email_tplt = None
+        self.certificate_svg_tplt = None
+        self.username_email_tplt = None
 
     def printParams(self):
         click.echo("--- Main Configuration ---")
         if self.title: click.echo(f"New title:  {self.title}")
         click.echo(f"Event date: {self.date}")
-        click.echo(f"Duration:   {self.duration}")
+        if self.duration: click.echo(f"Duration:   {self.duration}")
         click.echo(f"Select if:  {self.select}")
-        click.echo(f"SVG file:   {self.svg_tplt}")
-        click.echo(f"YAML file:  {self.yml_tplt}")
+        if self.certificate_svg_tplt: click.echo(f"SVG file:   {self.certificate_svg_tplt}")
+        if self.certificate_email_tplt: click.echo(f"YAML file:  {self.certificate_email_tplt}")
+        if self.username_email_tplt: click.echo(f"YAML file:  {self.username_email_tplt}")
 
 ###############################################################################
 
 @click.group(invoke_without_command=False)
 @click.option('--title',    help="(CQCG_TITLE) Override workshop title",   type=str, default=None)
 @click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str)
-@click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--select',   help="Column_name~Regex (select where ...)",   type=str, default="checked_in~True")
-@click.option('--svg_tplt', help="(CQCG_SVG_TPLT) Certificate template",   type=click.Path())
-@click.option('--yml_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
-@click_config_file.configuration_option(default="config")
-@click.pass_context
-def main(ctx,      title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self):
-    ctx.obj.setAll(title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self)
-
-###############################################################################
-
-@main.command()
+@click.option('--source', help="eventbrite|csv", default="eventbrite", type=str)
 @click.option('--event_id', help="(CQCG_FROMEB_EVENT_ID) Eventbrite Event ID", type=str)
 @click.option('--api_key',  help="(CQCG_FROMEB_API_KEY) Eventbrite API Key",   type=str)
+@click.option('--csv_file', help="(CQCG_FROMCSV_CSV_FILE) Eventbrite attendee summary in CSV", type=click.Path())
+@click.option('--gmail_user',  help="Gmail username",   type=str, default=None)
+@click.option('--gmail_password',  help="Gmail password",   type=str, default=None)
+@click.option('--self_email',  help="Email to send tests to",   type=str, default=None)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def fromeb(ctx, event_id, api_key):
-    """ # Get data from the Eventbrite API """
-    print("--- From Eventbrite ---")
-    print(f"Event ID:   {event_id}")
-    print(f"API KEY:    {api_key}")
-
-    assert event_id, "The event ID is undefined"
-    assert api_key,  "The API KEY is undefined"
-
-    event = get_event(event_id, api_key)
-    guests = get_guests(event_id, api_key)
-
-    common_main(event, guests, ctx.obj)
+def main(ctx,      title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
+    ctx.obj.setAll(title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email)
 
 ###############################################################################
 
 @main.command()
-@click.option('--csv_file', help="(CQCG_FROMCSV_CSV_FILE) Eventbrite attendee summary in CSV", type=click.Path())
+@click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
+@click.option('--certificate_svg_tplt', help="(CQCG_SVG_TPLT) Certificate template",   type=click.Path())
+@click.option('--certificate_email_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def fromcsv(ctx, csv_file):
-    """ # Get data from a CSV file """
-    print("--- From CSV File ---")
-    print(f"CSV file:   {csv_file}")
+def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
+    ctx.obj.duration = duration
+    ctx.obj.certificate_svg_tplt = certificate_svg_tplt
+    ctx.obj.certificate_email_tplt = certificate_email_tplt
+ 
+    ctx.obj.printParams();
+    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
 
-    assert csv_file, "The CSV file is undefined"
+    if ctx.obj.source == "eventbrite":
+        assert ctx.obj.event_id, "The event ID is undefined"
+        assert ctx.obj.api_key,  "The API KEY is undefined"
+        event_id = ctx.obj.event_id
+        api_key  = ctx.obj.api_key
 
-    assert ctx.obj.title,    "The title is undefined"
-    assert ctx.obj.date,     "The date is undefined"
-    assert ctx.obj.duration, "The duration is undefined"
+        """ # Get data from the Eventbrite API """
+        print("--- From Eventbrite ---")
+        print(f"Event ID:   {event_id}")
+        print(f"API KEY:    {api_key}")
 
-    event = {}
-    guests = csv_guests(csv_file)
 
-    common_main(event, guests, ctx.obj)
+        event = get_event(event_id, api_key)
+        guests = get_guests(event_id, api_key)
+    elif ctx.obj.source == "csv":
+        assert ctx.obj.csv_file, "The CSV file is undefined"
+        assert ctx.obj.title,    "The title is undefined"
+        assert ctx.obj.date,     "The date is undefined"
+        assert ctx.obj.duration, "The duration is undefined"
+
+        csv_file = ctx.obj.csv_file
+        """ # Get data from a CSV file """
+        print("--- From CSV File ---")
+        print(f"CSV file:   {csv_file}")
+
+
+        event = {}
+        guests = csv_guests(csv_file)
+
+    attended_guests = build_registrant_list(event, guests, title, date, duration, select, checked_in_only=True)
+    write_certificates(attended_guests, certificate_svg_tplt)
+
+    if send_atnd or send_self:
+        send_email(attended_guests, certificate_email_tplt, send_self, attach_certificate=True, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
 
 ###############################################################################
 
-def common_main(event, guests, params):
-    params.printParams();
-    title, date, duration, select, svg_tplt, yml_tplt, send_atnd, send_self = params.getAll()
+@main.command()
+@click.option('--username_email_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
+@click_config_file.configuration_option(default="config")
+@click.pass_context
+def usernames(ctx, username_email_tplt):
+    ctx.obj.username_email_tplt = username_email_tplt
+ 
+    ctx.obj.printParams();
+    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
 
-    attended_guests = build_registrant_list(event, guests, title, date, duration, select, checked_in_only=True)
-    write_certificates(attended_guests, svg_tplt)
+    if ctx.obj.source == "eventbrite":
+        assert ctx.obj.event_id, "The event ID is undefined"
+        assert ctx.obj.api_key,  "The API KEY is undefined"
+        event_id = ctx.obj.event_id
+        api_key  = ctx.obj.api_key
+
+        """ # Get data from the Eventbrite API """
+        print("--- From Eventbrite ---")
+        print(f"Event ID:   {event_id}")
+        print(f"API KEY:    {api_key}")
+
+
+        event = get_event(event_id, api_key)
+        guests = get_guests(event_id, api_key)
+    elif ctx.obj.source == "csv":
+        assert ctx.obj.csv_file, "The CSV file is undefined"
+        assert ctx.obj.title,    "The title is undefined"
+        assert ctx.obj.date,     "The date is undefined"
+
+        csv_file = ctx.obj.csv_file
+        """ # Get data from a CSV file """
+        print("--- From CSV File ---")
+        print(f"CSV file:   {csv_file}")
+
+
+        event = {}
+        guests = csv_guests(csv_file)
+
+    guests = build_registrant_list(event, guests, title, date, duration, select, checked_in_only=False)
+    guests = update_usernames(guests)
 
     if send_atnd or send_self:
-        send_email(attended_guests, yml_tplt, send_self)
+        send_email(guests, username_email_tplt, send_self, attach_certificate=False, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
+    else:
+        for guest in guests:
+            # Send email
+            print('Not sending email to: {first_name} {last_name} ({email}), username:{username}...'.format(**guest))
 
 ###############################################################################
 

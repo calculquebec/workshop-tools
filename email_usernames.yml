@@ -1,0 +1,10 @@
+--- # Email components
+replyto: 'no-reply@calculquebec.ca'
+subject: "Nom d'utilisateur pour la formation"
+message: |-
+  Bonjour {first_name} {last_name},
+  
+  Pour la formation {workshop} {date}, vous utiliserez le nom d'utilisateur : {username}
+  
+  Cordialement,
+  Calcul Québec
