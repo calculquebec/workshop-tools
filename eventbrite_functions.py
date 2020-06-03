@@ -106,6 +106,10 @@ def build_registrant_list(event, guests, title, date, duration, select, checked_
         time_end   = datetime.strptime(event[ 'end' ]['local'], '%Y-%m-%dT%H:%M:%S')
         duration = (time_end - time_start).total_seconds() / 3600
 
+    if not date:
+        date = datetime.strptime(event['start']['local'], "%Y-%m-%dT%H:%M:%S")
+        date = date.strftime("le %Y-%m-%d")
+
     # Separate column name and regex selection pattern
     col_regex = select.split('~', 1)
     col_name = col_regex[0]
