@@ -9,3 +9,7 @@ duration = None  # 3.0
 certificate_svg_tplt = None  # "sample_cert.svg"
 certificate_email_tplt = None  # "sample_email.yml"
 username_email_tplt = None     # "another sample email.yml"
+
+gmail_user = None     # "some username"
+gmail_password = None # "some password"
+self_email = None     # some email address to send tests to
