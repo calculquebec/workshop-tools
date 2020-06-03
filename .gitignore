@@ -3,3 +3,4 @@ venv/
 *.csv
 *.svg
 config
+__pycache__
