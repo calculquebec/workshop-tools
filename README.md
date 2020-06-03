@@ -8,8 +8,7 @@ as send emails that would contain a username.
 * `virtualenv venv`
 * `source venv/bin/activate`
 * `pip install -r requirements.txt`
-* Copy the `config.sample` file and adjust it to your needs.
-* Tell git to *forget* about it since it is local : `git update-index --assume-unchanged config.sample`
+* Copy the `config.sample` file to `config` and adjust the `config` file to your needs.
 * Create your SVG-formatted certificate. 
 * Create or modify the YAML files that contain the templates for the email messages.
 
