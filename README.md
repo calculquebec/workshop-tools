@@ -4,13 +4,17 @@ This project includes scripts to generate and send PDF certificates to attendees
 as send emails that would contain a username.
 
 ## Installation
-* On Compute Canada clusters only: `module load python/3.6.3`
+* With Python 3.x, create a virtual environment and install the requirements:
 * `virtualenv venv`
 * `source venv/bin/activate`
 * `pip install -r requirements.txt`
+* Copy the config.sample file and adjust it to your needs.
+* Create your SVG-formatted certificate. 
+* Create or modify the YAML files that contain the templates for the email messages.
 
 ## Preparation
-* On Eventbrite, make sure selected participants are "Checked In" in **Manage** > **Manage Attendees** > **Check-in**
+* To send certificates to attendees, on Eventbrite, make sure selected participants are "Checked In" 
+  in **Manage** > **Manage Attendees** > **Check-in**
 * The script requires a certificate template in SVG format with the following fields:
   - First name: `{{ first_name }}`
   - Last name: `{{ last_name }}`
