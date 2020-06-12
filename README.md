@@ -30,14 +30,15 @@ as send emails that would contain a username.
 * For help and available options:  
   `python tools.py --help`
 * For convenience, options can be set in the `config` file or with environment variables:
-  - `export CQCG_FROMEB_API_KEY=...`
-  - `export CQCG_FROMEB_EVENT_ID=...`
-  - `export CQCG_FROMCSV_CSV_FILE=report.csv`
-  - `export CQCG_TITLE=...`
-  - `export CQCG_DATE="on Month DD, YYYY"`
-  - `export CQCG_DURATION=6.0`
-  - `export CQCG_SVG_TPLT=training.svg`
-  - `export CQCG_YML_TPLT=training.yml`
+  - `export WT_API_KEY=...`
+  - `export WT_EVENT_ID=...`
+  - `export WT_CSV_FILE=report.csv`
+  - `export WT_TITLE=...`
+  - `export WT_DATE="on Month DD, YYYY"`
+  - `export WT_CERTIFICATES_DURATION=3.0`
+  - `export WT_CERTIFICATES_CERTIFICATE_SVG_TPLT=training.svg`
+  - `export WT_CERTIFICATES_CERTIFICATE_EMAIL_TPLT=email_certificates.yml`
+  - `export WT_USERNAMES_USERNAME_EMAIL_TPLT=email_usernames.yml`
 
 ## To send certificates
 Use the `certificates` subcommand.

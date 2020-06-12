@@ -210,18 +210,18 @@ class MainParams:
 ###############################################################################
 
 @click.group(invoke_without_command=False)
-@click.option('--title',    help="(CQCG_TITLE) Override workshop title",   type=str, default=None)
-@click.option('--date',     help="(CQCG_DATE) Specifiy the date manually", type=str)
-@click.option('--select',   help="Column_name~Regex (select where ...)",   type=str, default="checked_in~True")
+@click.option('--title',    help="(WT_TITLE) Override workshop title",   type=str, default=None)
+@click.option('--date',     help="(WT_DATE) Specifiy the date manually", type=str)
+@click.option('--select',   help="Column_name~Regex (select where ...)", type=str, default="checked_in~True")
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
-@click.option('--source', help="eventbrite|csv", default="eventbrite", type=str)
-@click.option('--event_id', help="(CQCG_FROMEB_EVENT_ID) Eventbrite Event ID", type=str)
-@click.option('--api_key',  help="(CQCG_FROMEB_API_KEY) Eventbrite API Key",   type=str)
-@click.option('--csv_file', help="(CQCG_FROMCSV_CSV_FILE) Eventbrite attendee summary in CSV", type=click.Path())
-@click.option('--gmail_user',  help="Gmail username",   type=str, default=None)
-@click.option('--gmail_password',  help="Gmail password",   type=str, default=None)
-@click.option('--self_email',  help="Email to send tests to",   type=str, default=None)
+@click.option('--source',   help="eventbrite|csv", default="eventbrite", type=str)
+@click.option('--event_id', help="(WT_EVENT_ID) Eventbrite Event ID",    type=str)
+@click.option('--api_key',  help="(WT_API_KEY) Eventbrite API Key",      type=str)
+@click.option('--csv_file', help="(WT_CSV_FILE) Eventbrite attendee summary in CSV", type=click.Path())
+@click.option('--gmail_user',      help="Gmail username",         type=str, default=None)
+@click.option('--gmail_password',  help="Gmail password",         type=str, default=None)
+@click.option('--self_email',      help="Email to send tests to", type=str, default=None)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
 def main(ctx,      title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
@@ -230,9 +230,9 @@ def main(ctx,      title, date, select, send_atnd, send_self, source, event_id, 
 ###############################################################################
 
 @main.command()
-@click.option('--duration', help="(CQCG_DURATION) Override workshop duration in hours", type=float, default=0)
-@click.option('--certificate_svg_tplt', help="(CQCG_SVG_TPLT) Certificate template",   type=click.Path())
-@click.option('--certificate_email_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
+@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
+@click.option('--certificate_svg_tplt',   help="(WT_CERTIFICATES_CERTIFICATE_SVG_TPLT) Certificate template", type=click.Path())
+@click.option('--certificate_email_tplt', help="(WT_CERTIFICATES_CERTIFICATE_EMAIL_TPLT) Email template",     type=click.Path())
 @click_config_file.configuration_option(default="config")
 @click.pass_context
 def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
@@ -281,7 +281,7 @@ def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
 ###############################################################################
 
 @main.command()
-@click.option('--username_email_tplt', help="(CQCG_YML_TPLT) Email template",         type=click.Path())
+@click.option('--username_email_tplt', help="(WT_USERNAMES_USERNAME_EMAIL_TPLT) Email template", type=click.Path())
 @click_config_file.configuration_option(default="config")
 @click.pass_context
 def usernames(ctx, username_email_tplt):
@@ -331,4 +331,4 @@ def usernames(ctx, username_email_tplt):
 ###############################################################################
 
 if __name__ == "__main__":
-    main(auto_envvar_prefix='CQCG', obj=MainParams())
+    main(auto_envvar_prefix='WT', obj=MainParams())

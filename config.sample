@@ -6,6 +6,7 @@ csv_file = None  # "report.csv"
 title = None     # "New Title"
 date = None      # "on January 1st, 1970"
 duration = None  # 3.0
+
 certificate_svg_tplt = None  # "sample_cert.svg"
 certificate_email_tplt = None  # "sample_email.yml"
 username_email_tplt = None     # "another sample email.yml"
