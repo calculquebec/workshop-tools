@@ -286,7 +286,8 @@ def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
 @click.pass_context
 def usernames(ctx, username_email_tplt):
     ctx.obj.username_email_tplt = username_email_tplt
- 
+    ctx.obj.select = "cancelled~False"
+
     ctx.obj.printParams();
     title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
 

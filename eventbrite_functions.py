@@ -35,7 +35,7 @@ def get_guests(event_id, api_key):
     Returns - Python dictionary with Eventbrite attendees information
     """
     response = requests.get(
-        "{}/events/{}/attendees/".format(api_url, event_id),
+        "{}/events/{}/attendees/?status=attending".format(api_url, event_id),
         headers = { "Authorization": "Bearer {}".format(api_key), },
         verify = True,
     )
@@ -46,7 +46,7 @@ def get_guests(event_id, api_key):
     while response.json()['pagination']['has_more_items']:
         continuation = response.json()['pagination']['continuation']
         response = requests.get(
-            "{}/events/{}/attendees/?continuation={}".format(api_url, event_id, continuation),
+            "{}/events/{}/attendees/?status=attending&continuation={}".format(api_url, event_id, continuation),
             headers = { "Authorization": "Bearer {}".format(api_key), },
             verify = True,
         )
@@ -122,7 +122,9 @@ def build_registrant_list(event, guests, title, date, duration, select, checked_
     attended_guests = []
 
     for guest in guests:
-        if not checked_in_only or (guest['checked_in'] and (sel_pattern.search(str(guest[col_name])))):
+        checked_in_value = (not checked_in_only) or guest['checked_in']
+
+        if checked_in_value and sel_pattern.search(str(guest[col_name])):
             first_name = guest['profile']['first_name']
             last_name = guest['profile']['last_name']
             email = guest['profile']['email']
