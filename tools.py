@@ -124,7 +124,7 @@ def create_email(gmail_user, guest, email_tplt, send_self, attach_certificate=Tr
 
 ###############################################################################
 
-def send_email(attended_guests, email_tplt_file, send_self, attach_certificate=True, gmail_user=None, gmail_password=None, self_email=None):
+def send_email(attended_guests, email_tplt_file, send_self, number_to_send, attach_certificate=True, gmail_user=None, gmail_password=None, self_email=None):
     email_tplt = {}
     with open(email_tplt_file, 'rt', encoding='utf8') as f:
         email_tplt = yaml.load(f, Loader=yaml.FullLoader)
@@ -141,6 +141,7 @@ def send_email(attended_guests, email_tplt_file, send_self, attach_certificate=T
         server.starttls()
         server.ehlo()
         server.login(gmail_user, gmail_password)
+        nsent = 0
 
         for guest in attended_guests:
             email = create_email(gmail_user, guest, email_tplt, send_self, attach_certificate, self_email)
@@ -158,7 +159,9 @@ def send_email(attended_guests, email_tplt_file, send_self, attach_certificate=T
                 # read : http://stackabuse.com/how-to-send-emails-with-gmail-using-python/
                 print('Go to https://myaccount.google.com/lesssecureapps and Allow less secure apps.')
                 sys.exit(1)
-
+            nsent = nsent + 1
+            if nsent == number_to_send:
+                break	
 ###############################################################################
 
 class MainParams:
@@ -171,6 +174,7 @@ class MainParams:
                 self.certificate_email_tplt,
                 self.send_atnd,
                 self.send_self,
+		self.number_to_send,
                 self.source,
                 self.event_id,
                 self.api_key,
@@ -179,12 +183,13 @@ class MainParams:
                 self.gmail_password,
                 self.self_email)
 
-    def setAll(self, title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
+    def setAll(self, title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
         self.title     = title
         self.date      = date
         self.select    = select
         self.send_atnd = send_atnd
         self.send_self = send_self
+        self.number_to_send = number_to_send
         self.source    = source
         self.event_id  = event_id
         self.api_key   = api_key
@@ -215,6 +220,7 @@ class MainParams:
 @click.option('--select',   help="Column_name~Regex (select where ...)", type=str, default="checked_in~True")
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
+@click.option('--number_to_send', help="Total number of certificates to send", type=int, default=-1)
 @click.option('--source',   help="eventbrite|csv", default="eventbrite", type=str)
 @click.option('--event_id', help="(WT_EVENT_ID) Eventbrite Event ID",    type=str)
 @click.option('--api_key',  help="(WT_API_KEY) Eventbrite API Key",      type=str)
@@ -224,8 +230,8 @@ class MainParams:
 @click.option('--self_email',      help="Email to send tests to", type=str, default=None)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def main(ctx,      title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
-    ctx.obj.setAll(title, date, select, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email)
+def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
+    ctx.obj.setAll(title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email)
 
 ###############################################################################
 
@@ -241,7 +247,7 @@ def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
     ctx.obj.certificate_email_tplt = certificate_email_tplt
  
     ctx.obj.printParams();
-    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
+    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
 
     if ctx.obj.source == "eventbrite":
         assert ctx.obj.event_id, "The event ID is undefined"
@@ -276,7 +282,7 @@ def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
     write_certificates(attended_guests, certificate_svg_tplt)
 
     if send_atnd or send_self:
-        send_email(attended_guests, certificate_email_tplt, send_self, attach_certificate=True, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
+        send_email(attended_guests, certificate_email_tplt, send_self, number_to_send, attach_certificate=True, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
 
 ###############################################################################
 
@@ -289,7 +295,7 @@ def usernames(ctx, username_email_tplt):
     ctx.obj.select = "cancelled~False"
 
     ctx.obj.printParams();
-    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
+    title, date, duration, select, certificate_svg_tplt, certificate_email_tplt, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email  = ctx.obj.getAll()
 
     if ctx.obj.source == "eventbrite":
         assert ctx.obj.event_id, "The event ID is undefined"
@@ -323,7 +329,7 @@ def usernames(ctx, username_email_tplt):
     guests = update_usernames(guests)
 
     if send_atnd or send_self:
-        send_email(guests, username_email_tplt, send_self, attach_certificate=False, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
+        send_email(guests, username_email_tplt, send_self, number_send, attach_certificate=False, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
     else:
         for guest in guests:
             # Send email
