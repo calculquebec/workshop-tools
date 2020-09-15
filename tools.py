@@ -329,7 +329,7 @@ def usernames(ctx, username_email_tplt):
     guests = update_usernames(guests)
 
     if send_atnd or send_self:
-        send_email(guests, username_email_tplt, send_self, number_send, attach_certificate=False, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
+        send_email(guests, username_email_tplt, send_self, number_to_send, attach_certificate=False, gmail_user=gmail_user, gmail_password=gmail_password, self_email=self_email)
     else:
         for guest in guests:
             # Send email
