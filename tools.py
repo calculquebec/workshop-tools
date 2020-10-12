@@ -59,11 +59,20 @@ def csv_guests(csv_file):
                               "Last Name":  "last_name",
                               "Email":      "email"    }, inplace=True)
     status_col = 'Attendee Status'
-    guests = []
+    if not "Order #" in guests_df.columns:
+        guests_df["Order #"] = ''
 
+    if not "cancelled" in guests_df.columns:
+        guests_df["cancelled"] = False
+
+    if not status_col in guests_df.columns:
+        guests_df[status_col] = 'Checked In'
+
+    guests = []
     for index, row in guests_df.iterrows():
         guest = {'checked_in': row[status_col] == 'Checked In',
                  'order_id':   row['Order #'],
+                 'cancelled':  row["cancelled"],
                  'profile':    row['first_name':status_col].to_dict(),
                  'answers':    row[status_col:].iloc[1:].to_dict()}
         guests.append(guest)
