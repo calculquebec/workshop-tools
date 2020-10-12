@@ -1,4 +1,4 @@
-# Copyright 2017-2019 Calcul Québec
+# Copyright 2017-2019 Calcul Quebec
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 # Developers and maintainers:
-# - Félix-Antoine Fortin
+# - Felix-Antoine Fortin
 # - Maxime Boissonneault
 # - Pier-Luc St-Onge
 
