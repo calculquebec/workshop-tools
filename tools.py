@@ -192,7 +192,7 @@ class MainParams:
                 self.gmail_password,
                 self.self_email)
 
-    def setAll(self, title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
+    def setAll(self, title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration):
         self.title     = title
         self.date      = date
         self.select    = select
@@ -210,6 +210,7 @@ class MainParams:
         self.certificate_email_tplt = None
         self.certificate_svg_tplt = None
         self.username_email_tplt = None
+        self.duration = duration
 
     def printParams(self):
         click.echo("--- Main Configuration ---")
@@ -237,15 +238,15 @@ class MainParams:
 @click.option('--gmail_user',      help="Gmail username",         type=str, default=None)
 @click.option('--gmail_password',  help="Gmail password",         type=str, default=None)
 @click.option('--self_email',      help="Email to send tests to", type=str, default=None)
+@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
-    ctx.obj.setAll(title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email)
+def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration):
+    ctx.obj.setAll(title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration)
 
 ###############################################################################
 
 @main.command()
-@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--certificate_svg_tplt',   help="(WT_CERTIFICATES_CERTIFICATE_SVG_TPLT) Certificate template", type=click.Path())
 @click.option('--certificate_email_tplt', help="(WT_CERTIFICATES_CERTIFICATE_EMAIL_TPLT) Email template",     type=click.Path())
 @click_config_file.configuration_option(default="config")
