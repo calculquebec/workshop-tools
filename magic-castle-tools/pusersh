@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+for TMP_USER in $(ls /home | grep user);
+do
+  echo $TMP_USER:
+  sudo su - $TMP_USER -c "$@"
+done
