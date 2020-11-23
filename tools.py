@@ -1,4 +1,4 @@
-# Copyright 2017-2019 Calcul Québec
+# Copyright 2017-2019 Calcul Quebec
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 # Developers and maintainers:
-# - Félix-Antoine Fortin
+# - Felix-Antoine Fortin
 # - Maxime Boissonneault
 # - Pier-Luc St-Onge
 
@@ -59,11 +59,20 @@ def csv_guests(csv_file):
                               "Last Name":  "last_name",
                               "Email":      "email"    }, inplace=True)
     status_col = 'Attendee Status'
-    guests = []
+    if not "Order #" in guests_df.columns:
+        guests_df["Order #"] = ''
 
+    if not "cancelled" in guests_df.columns:
+        guests_df["cancelled"] = False
+
+    if not status_col in guests_df.columns:
+        guests_df[status_col] = 'Checked In'
+
+    guests = []
     for index, row in guests_df.iterrows():
         guest = {'checked_in': row[status_col] == 'Checked In',
                  'order_id':   row['Order #'],
+                 'cancelled':  row["cancelled"],
                  'profile':    row['first_name':status_col].to_dict(),
                  'answers':    row[status_col:].iloc[1:].to_dict()}
         guests.append(guest)
@@ -183,7 +192,7 @@ class MainParams:
                 self.gmail_password,
                 self.self_email)
 
-    def setAll(self, title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
+    def setAll(self, title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration):
         self.title     = title
         self.date      = date
         self.select    = select
@@ -201,6 +210,7 @@ class MainParams:
         self.certificate_email_tplt = None
         self.certificate_svg_tplt = None
         self.username_email_tplt = None
+        self.duration = duration
 
     def printParams(self):
         click.echo("--- Main Configuration ---")
@@ -228,15 +238,15 @@ class MainParams:
 @click.option('--gmail_user',      help="Gmail username",         type=str, default=None)
 @click.option('--gmail_password',  help="Gmail password",         type=str, default=None)
 @click.option('--self_email',      help="Email to send tests to", type=str, default=None)
+@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email):
-    ctx.obj.setAll(title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email)
+def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration):
+    ctx.obj.setAll(title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration)
 
 ###############################################################################
 
 @main.command()
-@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--certificate_svg_tplt',   help="(WT_CERTIFICATES_CERTIFICATE_SVG_TPLT) Certificate template", type=click.Path())
 @click.option('--certificate_email_tplt', help="(WT_CERTIFICATES_CERTIFICATE_EMAIL_TPLT) Email template",     type=click.Path())
 @click_config_file.configuration_option(default="config")
