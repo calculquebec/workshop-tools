@@ -227,6 +227,7 @@ class MainParams:
 @click.group(invoke_without_command=False)
 @click.option('--title',    help="(WT_TITLE) Override workshop title",   type=str, default=None)
 @click.option('--date',     help="(WT_DATE) Specifiy the date manually", type=str)
+@click.option('--duration', help="(WT_DURATION) Override workshop duration in hours", type=float, default=0)
 @click.option('--select',   help="Column_name~Regex (select where ...)", type=str, default="checked_in~True")
 @click.option('--send_atnd/--no-send_atnd', default=False, help="Send the certificate to each attendee")
 @click.option('--send_self/--no-send_self', default=False, help="Send to yourself")
@@ -238,7 +239,6 @@ class MainParams:
 @click.option('--gmail_user',      help="Gmail username",         type=str, default=None)
 @click.option('--gmail_password',  help="Gmail password",         type=str, default=None)
 @click.option('--self_email',      help="Email to send tests to", type=str, default=None)
-@click.option('--duration', help="(WT_CERTIFICATES_DURATION) Override workshop duration in hours", type=float, default=0)
 @click_config_file.configuration_option(default="config")
 @click.pass_context
 def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, source, event_id, api_key, csv_file, gmail_user, gmail_password, self_email, duration):
@@ -251,8 +251,7 @@ def main(ctx,      title, date, select, send_atnd, send_self, number_to_send, so
 @click.option('--certificate_email_tplt', help="(WT_CERTIFICATES_CERTIFICATE_EMAIL_TPLT) Email template",     type=click.Path())
 @click_config_file.configuration_option(default="config")
 @click.pass_context
-def certificates(ctx, duration, certificate_svg_tplt, certificate_email_tplt):
-    ctx.obj.duration = duration
+def certificates(ctx, certificate_svg_tplt, certificate_email_tplt):
     ctx.obj.certificate_svg_tplt = certificate_svg_tplt
     ctx.obj.certificate_email_tplt = certificate_email_tplt
  
