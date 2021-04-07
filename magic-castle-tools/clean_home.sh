@@ -1,9 +1,7 @@
 #!/bin/bash
 
 cd ~
-rm .bash* -f
-rm .cache .jupyterhub_slurmspawner_*.log .lesshst .local .Xauthority -rf
-rm $(ls ~ | grep -vE 'projects|scratch') -rf
+rm $(ls -A ~ | grep -vE 'projects|scratch|.ssh') -rf
 
 cp /etc/skel/.bash* ~/
 ls -A ~
