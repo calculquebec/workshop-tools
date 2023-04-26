@@ -12,6 +12,11 @@ as send emails that would contain a username.
 * Create your SVG-formatted certificate. 
 * Create or modify the YAML files that contain the templates for the email messages.
 
+### About libcairo-2.dll on Windows
+* Install [MSYS2](https://www.msys2.org/) with the default installation path `C:\msys64`
+* In the MSYS terminal, run: `pacman -S mingw-w64-x86_64-cairo`
+* In your user `PATH` environment variable, append: `C:\msys64\mingw64\bin`
+
 ## Preparation
 * To send certificates to attendees, on Eventbrite, make sure selected participants are "Checked In" 
   in **Manage** > **Manage Attendees** > **Check-in**
